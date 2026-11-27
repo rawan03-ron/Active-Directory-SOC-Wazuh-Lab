@@ -71,3 +71,26 @@ All attack stages—from credential spraying (`Rule 60122`) and remote authentic
 ## 📌 Key Takeaways
 * Combining native **Windows Security Auditing** with **Sysmon** telemetry provides full visibility across both authentication attacks (`4625`, `4769`, `4771`) and endpoint process execution.
 * Structured alert correlation in **Wazuh SIEM** enables rapid attribution of attacker source IPs (`10.0.0.50`) and targeted high-value accounts (`svc_backup`, `admlab`).
+
+## 📊 Governance, Risk & Compliance (GRC) Assessment
+
+To bridge technical SOC operations with enterprise risk management, the findings from this lab were evaluated against industry-standard security frameworks (**NIST CSF**, **ISO/IEC 27001:2022**, and **CIS Controls v8**).
+
+### 1. Risk Register & Severity Evaluation
+
+| Identified Risk | Vulnerability / Attack Vector | Likelihood | Impact | Overall Risk Rating | Recommended Remediation & Control |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Weak Service Account Authentication** | Kerberoasting (`T1558.003`) via RC4-encrypted SPN ticket (`svc_backup`) | High | Critical | **Critical** | Migrate to **gMSA**, enforce 25+ char passwords, and disable RC4 in favor of AES-256. |
+| **Credential Guessing Exposure** | SMB Password Spraying (`T1110.003`) against domain accounts | High | High | **High** | Enforce strict GPO Account Lockout Policies and implement MFA on privileged/remote access. |
+| **Lateral Movement & Endpoint Execution** | Unmonitored script/binary execution on endpoints (`WS01`) | Medium | High | **High** | Enforce AppLocker/WDAC policies and maintain continuous Sysmon + SIEM alerting. |
+
+---
+
+### 2. Compliance & Control Mapping
+
+| Attack / Defensive Capability | NIST CSF 2.0 | ISO/IEC 27001:2022 | CIS Controls v8 | Compliance Status & Lab Outcome |
+| :--- | :--- | :--- | :--- | :--- |
+| **Centralized Log Collection & SIEM (`Wazuh` + `Sysmon`)** | `DE.CM-01` / `DE.AE-02` | `A.8.15` (Logging) & `A.8.16` (Monitoring) | Control 8 (Audit Log Management) | **Compliant** — Real-time ingestion and correlation of `4625`, `4769`, and Sysmon events. |
+| **Least Privilege & OU Segmentation (`cyberlab.local`)** | `PR.AA-05` | `A.5.15` (Access Control) & `A.8.2` (Privileged Access) | Control 5 & 6 (Account & Access Control) | **Compliant** — Standard users separated from administrative and service OUs. |
+| **Kerberos Pre-Authentication Enforcement** | `PR.AA-01` | `A.8.5` (Secure Authentication) | Control 16 / Kerberos Hardening | **Compliant** — Verified `UF_DONT_REQUIRE_PREAUTH` disabled across all accounts. |
+| **Service Account Encryption Hardening (RC4 vs. AES)** | `PR.DS-01` | `A.8.24` (Use of Cryptography) | Control 3 & 4 (Secure Configuration) | **Remediation Required** — RC4 (`0x17`) allowed TGS extraction; flagged for AES-256 upgrade. |
